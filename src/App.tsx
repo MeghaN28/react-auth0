@@ -14,6 +14,8 @@ import Typography from '@mui/material/Typography';
 import Profile from './Profile';
 import SignIn from './SignIn';
 import './App.css';
+import SignUp from './SignUp';
+import Login from './Login';
 
 function App() {
   const { isAuthenticated, logout } = useAuth0();
@@ -169,8 +171,9 @@ function App() {
         </AppBar>
         <Routes>
           <Route path="/profile" element={<Profile />} />
-          <Route path="/signIn" element={<SignIn />} />
-          <Route path="*" element={<SignIn />} />
+          <Route path="/signIn" element={<SignUp />} />
+          <Route path="*" element={<SignUp />} />
+          <Route path="/login" element={<SignIn />} />
         </Routes>
       </BrowserRouter>
     </Container>
