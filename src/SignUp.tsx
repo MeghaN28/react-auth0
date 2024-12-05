@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
-import { Container, Grid, Typography, TextField, Button } from '@mui/material';
 import axios from 'axios';
+import { TextField, Button, Typography, Box, Alert } from '@mui/material';
+
+interface MFAResponse {
+  authenticator_type: string;
+  secret: string;
+  barcode_uri: string;
+  recovery_codes: string[];
+}
 
 function Signup() {
   const [email, setEmail] = useState('');
+  const [barcodeUri, setBarcodeUri] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userId,setUserId]=useState('');
   const [error, setError] = useState('');
+  const [mfaResponse, setMfaResponse] = useState<MFAResponse | null>(null);
+  const [mfaToken, setMfaToken] = useState('');
 
-  const handleSignup = async (e: { preventDefault: () => void }) => {
+  const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
@@ -18,113 +27,128 @@ function Signup() {
     }
 
     try {
-        const [auth0Response, customApiResponse] = await Promise.all([
-            await axios.post(
-               'https://dev-dyy0v56xmxzyf6o6.us.auth0.com/dbconnections/signup',
-               {
-                 client_id: 'I5gcvfUiOML9xmZ52QXUsGJqZVEBiSDR',
-                 email,
-                 password,
-                 connection: 'Username-Password-Authentication',
-               },
-               {
-                 headers: {
-                   'Content-Type': 'application/json',
-                 },
-               }
-             ),
-             
-             axios.post(
-               'https://g1x0k9jowh.execute-api.us-east-1.amazonaws.com/dev/signin',  // Replace with your custom API endpoint
-               {
-                 userId: userId,  // Include userId if needed
-                 email: email,
-                 password: password,
-                // additionalField: 'some data',  // Any additional data for your custom API
-               },
-               {
-                 headers: {
-                   'Content-Type': 'application/json',
-                 },
-               }
-             ),
-           ]);
+      // Signup logic (to Auth0 and your API)
+      await axios.post(
+        'https://dev-dyy0v56xmxzyf6o6.us.auth0.com/dbconnections/signup',
+        {
+          client_id: 'I5gcvfUiOML9xmZ52QXUsGJqZVEBiSDR',
+          email,
+          password,
+          connection: 'Username-Password-Authentication',
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const responsemfa = await axios.post('https://dev-dyy0v56xmxzyf6o6.us.auth0.com/oauth/token', {
+        grant_type: 'password',
+        username: email,
+        password: password,
+        client_id: 'I5gcvfUiOML9xmZ52QXUsGJqZVEBiSDR',
+        client_secret: 'xmOex2Hey-Xp_qAc8C6OvSCb4hP7rEgwdIlZyPOAlg_AOlw-W_-O6sQHS3oaiRgK',
+        connection: 'Username-Password-Authentication'
+      });
 
-      console.log('Signup successful:', auth0Response.data);
-
-      // Redirect to login after successful signup
-      window.location.href = '/react-auth0/login';
-    } catch (err) {
-      setError('Error during signup');
-      console.error(err);
+      
+      
+      // Call local Python backend to fetch MFA details
+     
+       // Store MFA response in state
+    } 
+      catch (err: any) {
+        if (err.response?.data.mfa_token) {
+          console.log("here")
+          setMfaToken(err.response.data.mfa_token);
+          const response = await axios.post(
+            'https://dev-dyy0v56xmxzyf6o6.us.auth0.com/mfa/associate', 
+            { 
+              authenticator_types: ["otp"]
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${err.response.data.mfa_token}`, // Replace MFA_TOKEN with the actual token
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          setMfaResponse(response.data);
+          if (response.data.barcode_uri) {
+            setBarcodeUri(response.data.barcode_uri);
+          } 
+      
+        //setIsMfaRequired(true);
+      }
+    
+    
     }
+     
   };
 
   return (
-    <Container maxWidth="xs" sx={{ mt: 8, boxShadow: 3, borderRadius: 2, padding: 4 }}>
-      <Typography variant="h4" component="h1" align="center" gutterBottom>
-        Sign Up
-      </Typography>
+    <Box sx={{ maxWidth: 400, margin: '0 auto', padding: 2 }}>
       <form onSubmit={handleSignup}>
-        <Grid container spacing={3}>
-        <Grid item xs={12}>
-            <TextField
-              label="UserId"
-              variant="outlined"
-              fullWidth
-              required
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Email"
-              variant="outlined"
-              fullWidth
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Password"
-              type="password"
-              variant="outlined"
-              fullWidth
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Confirm Password"
-              type="password"
-              variant="outlined"
-              fullWidth
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-          </Grid>
-          {error && (
-            <Grid item xs={12}>
-              <Typography color="error" align="center">
-                {error}
-              </Typography>
-            </Grid>
-          )}
-          <Grid item xs={12}>
-            <Button type="submit" variant="contained" fullWidth>
-              Sign Up
-            </Button>
-          </Grid>
-        </Grid>
+        <Typography variant="h4" gutterBottom>
+          Sign Up
+        </Typography>
+  
+        <TextField
+          fullWidth
+          label="Email"
+          variant="outlined"
+          margin="normal"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <TextField
+          fullWidth
+          label="Password"
+          type="password"
+          variant="outlined"
+          margin="normal"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <TextField
+          fullWidth
+          label="Confirm Password"
+          type="password"
+          variant="outlined"
+          margin="normal"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+  
+        <Button
+          fullWidth
+          variant="contained"
+          color="primary"
+          type="submit"
+          sx={{ marginTop: 2 }}
+        >
+          Sign Up
+        </Button>
       </form>
-    </Container>
+  
+      {error && (
+        <Alert severity="error" sx={{ marginTop: 2 }}>
+          {error}
+        </Alert>
+      )}
+  
+      {mfaResponse && (
+        <Box sx={{ marginTop: 3 }}>
+          <Typography variant="h6">MFA Enrollment Details</Typography>
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(barcodeUri)}&size=150x150`}
+            alt="QR Code"
+            style={{ marginTop: '10px' }}
+          />
+        </Box>
+      )}
+    </Box>
   );
-}
+  }
 
 export default Signup;

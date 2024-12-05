@@ -13,13 +13,12 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Profile from './Profile';
 import SignIn from './SignIn';
-import './App.css';
 import SignUp from './SignUp';
 import Login from './Login';
+import './App.css';
 
 function App() {
   const { isAuthenticated, logout } = useAuth0();
-
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
 
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -44,10 +43,11 @@ function App() {
               >
                 React Auth0
               </Typography>
+
               <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
                 <IconButton
                   size="large"
-                  aria-label="account of current user"
+                  aria-label="navigation menu"
                   aria-controls="menu-appbar"
                   aria-haspopup="true"
                   onClick={handleOpenNavMenu}
@@ -73,107 +73,72 @@ function App() {
                     display: { xs: 'block', md: 'none' },
                   }}
                 >
-                  <MenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
-                      window.location.href = 'https://rodrigokamada.github.io/angular-auth0/';
-                    }}
-                  >
-                    <Typography textAlign="center">
-                      <Button>Angular Application</Button>
-                    </Typography>
-                  </MenuItem>
-                  {!isAuthenticated && (
-                    <MenuItem onClick={handleCloseNavMenu}>
-                      <Typography textAlign="center">
-                        <Button component={RouterLink} to="/signIn">
-                          Sign In
-                        </Button>
-                      </Typography>
-                    </MenuItem>
-                  )}
-                  {isAuthenticated && (
-                    <MenuItem onClick={handleCloseNavMenu}>
-                      <Typography textAlign="center">
-                        <Button component={RouterLink} to="/profile">
-                          Profile
-                        </Button>
-                      </Typography>
-                    </MenuItem>
-                  )}
-                  {isAuthenticated && (
-                    <MenuItem
-                      onClick={() => {
-                        handleCloseNavMenu();
-                        logout({
-                          logoutParams: { returnTo: window.location.origin + '/react-auth0' },
-                        });
-                      }}
-                    >
-                      <Typography textAlign="center">
+                  {!isAuthenticated ? (
+                    <>
+                      <MenuItem onClick={handleCloseNavMenu}>
+                        <Button component={RouterLink} to="/login">Log In</Button>
+                      </MenuItem>
+                      <MenuItem onClick={handleCloseNavMenu}>
+                        <Button component={RouterLink} to="/signIn">Sign Up</Button>
+                      </MenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <MenuItem onClick={handleCloseNavMenu}>
+                        <Button component={RouterLink} to="/profile">Profile</Button>
+                      </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          handleCloseNavMenu();
+                          logout({
+                            logoutParams: { returnTo: window.location.origin + '/react-auth0' },
+                          });
+                        }}
+                      >
                         <Button>Sign Out</Button>
-                      </Typography>
-                    </MenuItem>
+                      </MenuItem>
+                    </>
                   )}
                 </Menu>
               </Box>
-              <Typography
-                variant="h6"
-                noWrap
-                component="div"
-                sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}
-              >
-                React Auth0
-              </Typography>
+
               <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-                <Button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.location.href = 'https://rodrigokamada.github.io/angular-auth0/';
-                  }}
-                  sx={{ my: 2, color: 'white', display: 'block' }}
-                >
-                  Angular Application
-                </Button>
-                {!isAuthenticated && (
-                  <Button
-                    component={RouterLink}
-                    to="/signIn"
-                    sx={{ my: 2, color: 'white', display: 'block' }}
-                  >
-                    Sign In
-                  </Button>
-                )}
-                {isAuthenticated && (
-                  <Button
-                    component={RouterLink}
-                    to="/profile"
-                    sx={{ my: 2, color: 'white', display: 'block' }}
-                  >
-                    Profile
-                  </Button>
-                )}
-                {isAuthenticated && (
-                  <Button
-                    onClick={() => {
-                      logout({
-                        logoutParams: { returnTo: window.location.origin + '/react-auth0' },
-                      });
-                    }}
-                    sx={{ my: 2, color: 'white', display: 'block' }}
-                  >
-                    Sign Out
-                  </Button>
+                {!isAuthenticated ? (
+                  <>
+                    <Button component={RouterLink} to="/login" sx={{ my: 2, color: 'white', display: 'block' }}>
+                      Log In
+                    </Button>
+                    <Button component={RouterLink} to="/signIn" sx={{ my: 2, color: 'white', display: 'block' }}>
+                      Sign Up
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button component={RouterLink} to="/profile" sx={{ my: 2, color: 'white', display: 'block' }}>
+                      Profile
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        logout({
+                          logoutParams: { returnTo: window.location.origin + '/react-auth0' },
+                        })
+                      }
+                      sx={{ my: 2, color: 'white', display: 'block' }}
+                    >
+                      Sign Out
+                    </Button>
+                  </>
                 )}
               </Box>
             </Toolbar>
           </Container>
         </AppBar>
+
         <Routes>
           <Route path="/profile" element={<Profile />} />
           <Route path="/signIn" element={<SignUp />} />
-          <Route path="*" element={<SignUp />} />
-          <Route path="/login" element={<SignIn />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<SignIn />} />
         </Routes>
       </BrowserRouter>
     </Container>
