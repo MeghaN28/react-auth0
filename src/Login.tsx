@@ -1,130 +1,112 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Button, TextField, Typography, Box, Container, Alert } from '@mui/material';
+import { TextField, Button, Typography, Box, Alert } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [mfaCode, setMfaCode] = useState('');
-  const [isMfaRequired, setIsMfaRequired] = useState(false);
+  const [username, setUserName] = useState('');
   const [mfaToken, setMfaToken] = useState('');
-  const [username,SetUserName]=useState('');
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const navigate = useNavigate(); // For navigation after successful login/MFA
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
+    setError(''); // Clear previous errors
 
     try {
-      const response = await axios.post('https://dev-dyy0v56xmxzyf6o6.us.auth0.com/oauth/token', {
-        grant_type: 'password',
-        username: email,
-        password: password,
-        client_id: 'I5gcvfUiOML9xmZ52QXUsGJqZVEBiSDR',
-        client_secret: 'xmOex2Hey-Xp_qAc8C6OvSCb4hP7rEgwdIlZyPOAlg_AOlw-W_-O6sQHS3oaiRgK',
-        connection: 'Username-Password-Authentication'
+      const loginResponse = await axios.post('http://localhost:5000/login', {
+        email,
+        password,
       });
-
-      if (response?.data.mfa_token) {
-        setMfaToken(response.data.mfa_token);
-        setIsMfaRequired(true);
-      } else {
-        localStorage.setItem('token', response.data.access_token);
-        window.location.href = '/profile';
+      localStorage.setItem('username',username);
+      if (loginResponse.data.isMfaRequired) {
+        setMfaToken(loginResponse.data.mfa_token);
+      } 
+      else
+      {
+        setError('Login failed. Please try again.');
       }
-    } catch (err: any) {
-      if (err.response?.data.mfa_token) {
-        setMfaToken(err.response.data.mfa_token);
-        setIsMfaRequired(true);
-      } else {
-        setError('Login failed. Please check your credentials.');
-      }
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Login failed. Please try again.');
     }
   };
 
-  const handleMfaVerification = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  const handleMfaVerify = async () => {
+    setError(''); // Clear previous errors
 
     try {
-      const verificationResponse = await axios.post('https://dev-dyy0v56xmxzyf6o6.us.auth0.com/oauth/token', {
+      const mfaResponse = await axios.post('http://localhost:5000/mfa-verify', {
         mfa_token: mfaToken,
-        otp: mfaCode,
-        client_id: 'I5gcvfUiOML9xmZ52QXUsGJqZVEBiSDR',
-        grant_type: 'http://auth0.com/oauth/grant-type/mfa-otp',
-        client_secret: 'xmOex2Hey-Xp_qAc8C6OvSCb4hP7rEgwdIlZyPOAlg_AOlw-W_-O6sQHS3oaiRgK'
+        otp,
       });
 
-      localStorage.setItem('token', verificationResponse.data.access_token);
-      localStorage.setItem('username', username)
-      window.location.href = '/react-auth0/profile';
-    } catch {
-      setError('MFA verification failed. Please try again.');
+      if (mfaResponse.status === 200) {
+        // MFA verified successfully, navigate to profile
+        console.log('MFA verified successfully');
+        navigate('/profile');
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'MFA verification failed. Please try again.');
     }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 5, p: 3, boxShadow: 3, borderRadius: 2 }}>
-        {isMfaRequired ? (
-          <form onSubmit={handleMfaVerification}>
-            <Typography variant="h5" gutterBottom>
-              Enter MFA Code
-            </Typography>
-            <TextField
-              fullWidth
-              margin="normal"
-              label="MFA Code"
-              type="text"
-              value={mfaCode}
-              onChange={(e) => setMfaCode(e.target.value)}
-              required
-            />
-            <Button variant="contained" color="primary" fullWidth type="submit">
-              Verify MFA
-            </Button>
-            {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-          </form>
-        ) : (
-          <form onSubmit={handleLogin}>
-            <Typography variant="h5" gutterBottom>
-              Login
-            </Typography>
-            <TextField
-              fullWidth
-              margin="normal"
-              label="UserName"
-              type="text"
-              value={username}
-              onChange={(e) => SetUserName(e.target.value)}
-              
-            />
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <TextField
-              fullWidth
-              margin="normal"
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <Button variant="contained" color="primary" fullWidth type="submit">
-              Login
-            </Button>
-            {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-          </form>
-        )}
-      </Box>
-    </Container>
+    <Box sx={{ maxWidth: 400, margin: '0 auto', padding: 2 }}>
+      <form onSubmit={handleLogin}>
+        <Typography variant="h4" gutterBottom>Login</Typography>
+        <TextField
+          fullWidth
+          label="userName"
+          variant="outlined"
+          margin="normal"
+          value={username}
+          onChange={(e) => setUserName(e.target.value)}
+        />
+        <TextField
+          fullWidth
+          label="Email"
+          variant="outlined"
+          margin="normal"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <TextField
+          fullWidth
+          label="Password"
+          type="password"
+          variant="outlined"
+          margin="normal"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <Button fullWidth variant="contained" color="primary" type="submit">
+          Login
+        </Button>
+      </form>
+
+      {mfaToken && (
+        <Box>
+          <Typography variant="h6" gutterBottom>Enter MFA Code</Typography>
+          <TextField
+            fullWidth
+            label="MFA Code"
+            variant="outlined"
+            margin="normal"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+          />
+          <Button fullWidth variant="contained" color="secondary" onClick={handleMfaVerify}>
+            Verify MFA
+          </Button>
+        </Box>
+      )}
+
+      {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+    </Box>
   );
 }
 
